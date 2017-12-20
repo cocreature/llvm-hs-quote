@@ -20,8 +20,8 @@ module LLVM.Quote.AST (
   Instruction(..),
   NamedInstruction(..),
   LabeledInstruction(..),
-  MetadataNodeID(..),
-  MetadataNode(..),
+  A.MetadataNodeID(..),
+  A.MetadataNode(..),
   Operand(..),
   CallableOperand,
   Constant(..),
@@ -157,7 +157,7 @@ data Module =
 
 -- | <http://llvm.org/docs/LangRef.html#metadata-nodes-and-metadata-strings>
 -- Metadata can be attached to an instruction
-type InstructionMetadata = [(ShortByteString, A.MetadataNode)]
+type InstructionMetadata = [(ShortByteString, MetadataNode)]
 
 -- | For the redoubtably complex 'LandingPad' instruction
 data LandingPadClause
@@ -562,9 +562,21 @@ data Operand
   = LocalReference Type Name
   -- | 'Constant's include 'LLVM.AST.Constant.GlobalReference', for \@foo
   | ConstantOperand Constant
-  | MetadataOperand A.Metadata
+  | MetadataOperand Metadata
   | AntiOperand ShortByteString
   deriving (Eq, Ord, Read, Show, Typeable, Data)
+
+data MetadataNode
+  = MetadataNode [Maybe Metadata]
+  | MetadataNodeReference A.MetadataNodeID
+  deriving (Eq, Ord, Read, Show, Typeable, Data)
+
+data Metadata
+  = MDString ShortByteString
+  | MDNode MetadataNode
+  | MDValue Operand
+  deriving (Eq, Ord, Read, Show, Typeable, Data)
+
 
 -- | The 'LLVM.AST.Instruction.Call' instruction is special: the callee can be inline assembly
 type CallableOperand  = Either InlineAssembly Operand
@@ -709,10 +721,16 @@ deriving instance Lift A.Atomicity
 deriving instance Lift LandingPadClause
 deriving instance Lift A.MemoryOrdering
 deriving instance Lift Name
-deriving instance Lift A.MetadataNode
+deriving instance Lift MetadataNode
 deriving instance Lift A.MetadataNodeID
-deriving instance Lift Operand
-deriving instance Lift A.Metadata
+instance Lift Operand where
+  lift (LocalReference ty n) = [| LocalReference ty n |]
+  lift (ConstantOperand c) = [| ConstantOperand c |]
+  lift (MetadataOperand md) = [| MetadataOperand md |]
+instance Lift Metadata where
+  lift (MDString s) = [| MDString s |]
+  lift (MDNode node) = [| MDNode node |]
+  lift (MDValue o) = [| MDValue o |]
 deriving instance Lift Type
 deriving instance Lift A.FloatingPointType
 deriving instance Lift DataLayout
