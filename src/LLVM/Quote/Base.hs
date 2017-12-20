@@ -132,10 +132,6 @@ class QQExp a b where
 instance (Lift a) => QQExp a a where
   qqExpM x = [||pure x||]
 
-instance QQExp [A.MetadataNodeID] [L.MetadataNodeID] where
-  qqExpM (x:xs) = [||(:) <$> $$(qqExpM x) <*> $$(qqExpM xs)||]
-  qqExpM []     = [||pure []||]
-
 instance QQExp A.InstructionMetadata L.InstructionMetadata where
   qqExpM (x:xs) = [||(:) <$> $$(qqExpM x) <*> $$(qqExpM xs)||]
   qqExpM []     = [||pure []||]
@@ -169,6 +165,10 @@ instance QQExp [Maybe A.Operand] [Maybe L.Operand] where
   qqExpM (x:xs) = [||(:) <$> $$(qqExpM x) <*> $$(qqExpM xs)||]
   qqExpM []     = [||pure []||]
 
+instance QQExp [Maybe A.Metadata] [Maybe L.Metadata] where
+  qqExpM (x:xs) = [||(:) <$> $$(qqExpM x) <*> $$(qqExpM xs)||]
+  qqExpM []     = [||pure []||]
+
 instance QQExp [A.Constant] [L.Constant] where
   qqExpM (x:xs) = [||(:) <$> $$(qqExpM x) <*> $$(qqExpM xs)||]
   qqExpM []     = [||pure []||]
@@ -182,6 +182,10 @@ instance QQExp [A.Type] [L.Type] where
 --   qqExpM (Just x) = [||Just <$> $$(qqExpM x)||]
 
 instance QQExp (Maybe A.Operand) (Maybe L.Operand) where
+  qqExpM Nothing  = [||pure Nothing||]
+  qqExpM (Just x) = [||Just <$> $$(qqExpM x)||]
+
+instance QQExp (Maybe A.Metadata) (Maybe L.Metadata) where
   qqExpM Nothing  = [||pure Nothing||]
   qqExpM (Just x) = [||Just <$> $$(qqExpM x)||]
 
@@ -247,10 +251,10 @@ instance QQExp A.NamedInstruction [L.BasicBlock] where
   qqExpM = qqNamedInstructionE
 instance QQExp A.LabeledInstruction [L.BasicBlock] where
   qqExpM = qqLabeledInstructionE
-instance QQExp A.MetadataNodeID L.MetadataNodeID where
-  qqExpM = qqMetadataNodeIDE
 instance QQExp A.MetadataNode L.MetadataNode where
   qqExpM = qqMetadataNodeE
+instance QQExp A.Metadata L.Metadata where
+  qqExpM = qqMetadata
 instance QQExp A.Operand L.Operand where
   qqExpM = qqOperandE
 instance QQExp A.Constant L.Constant where
@@ -650,17 +654,19 @@ qqMetadataNodeE :: Conversion A.MetadataNode L.MetadataNode
 qqMetadataNodeE (A.MetadataNode x1) =
   [||L.MetadataNode <$> $$(qqExpM x1)||]
 qqMetadataNodeE (A.MetadataNodeReference x1) =
-  [||L.MetadataNodeReference <$> $$(qqExpM x1)||]
+  [||L.MetadataNodeReference <$> pure x1||]
+
+qqMetadata :: Conversion A.Metadata L.Metadata
+qqMetadata (A.MDString s) =
+  [||L.MDString <$> $$(qqExpM s)||]
 
 qqOperandE :: Conversion A.Operand L.Operand
 qqOperandE (A.LocalReference x1 x2) =
   [||L.LocalReference <$> $$(qqExpM x1) <*> $$(qqExpM x2)||]
 qqOperandE (A.ConstantOperand x1) =
   [||L.ConstantOperand <$> $$(qqExpM x1)||]
-qqOperandE (A.MetadataStringOperand x1) =
-  [||A.MetadataStringOperand <$> $$(qqExpM x1)||]
-qqOperandE (A.MetadataNodeOperand x1) =
-  [||A.MetadataNodeOperand <$> $$(qqExpM x1)||]
+qqOperandE (A.MetadataOperand x1) =
+  [||L.MetadataOperand <$> $$(qqExpM x1)||]
 qqOperandE (A.AntiOperand s) =
   [||$$(unsafeTExpCoerce $ antiVarE s)||]
 
@@ -708,8 +714,8 @@ qqTypeE (A.IntegerType x1) =
   [||L.IntegerType <$> $$(qqExpM x1)||]
 qqTypeE (A.PointerType x1 x2) =
   [||L.PointerType <$> $$(qqExpM x1) <*> $$(qqExpM x2)||]
-qqTypeE (A.FloatingPointType x1 x2) =
-  [||L.FloatingPointType <$> $$(qqExpM x1) <*> $$(qqExpM x2)||]
+qqTypeE (A.FloatingPointType x1) =
+  [||L.FloatingPointType <$> $$(qqExpM x1)||]
 qqTypeE (A.FunctionType x1 x2 x3) =
   [||L.FunctionType <$> $$(qqExpM x1) <*> $$(qqExpM x2) <*> $$(qqExpM x3)||]
 qqTypeE (A.VectorType x1 x2) =

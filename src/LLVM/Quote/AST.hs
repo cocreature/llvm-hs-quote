@@ -21,7 +21,8 @@ module LLVM.Quote.AST (
   NamedInstruction(..),
   LabeledInstruction(..),
   A.MetadataNodeID(..),
-  A.MetadataNode(..),
+  MetadataNode(..),
+  Metadata(..),
   Operand(..),
   CallableOperand,
   Constant(..),
@@ -642,7 +643,7 @@ data Type
   -- | <http://llvm.org/docs/LangRef.html#pointer-type>
   | PointerType { pointerReferent :: Type, pointerAddrSpace :: A.AddrSpace }
   -- | <http://llvm.org/docs/LangRef.html#floating-point-types>
-  | FloatingPointType { typeBits :: Word32, floatingPointType :: A.FloatingPointType }
+  | FloatingPointType { floatingPointType :: A.FloatingPointType }
   -- | <http://llvm.org/docs/LangRef.html#function-type>
   | FunctionType { resultType :: Type, argumentTypes :: [Type], isVarArg :: Bool }
   -- | <http://llvm.org/docs/LangRef.html#vector-type>
