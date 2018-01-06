@@ -733,7 +733,7 @@ deriving instance Lift A.TailCallKind
 deriving instance Lift A.DataLayout
 
 instance Lift ShortByteString where
-  lift b = [| fromString $(lift (unpack b)) |]
+  lift b = [| fromString $(lift (unpack' b)) |]
     where
       unpack' :: BS.ShortByteString -> [Char]
       unpack' x = fmap (chr . fromIntegral) (BS.unpack x)
